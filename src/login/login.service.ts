@@ -1,26 +1,54 @@
 import { Injectable } from '@nestjs/common';
 import { CreateLoginDto } from './dto/create-login.dto';
-import { UpdateLoginDto } from './dto/update-login.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { loginInter } from './login.interface';
+import { Model } from 'mongoose';
+
+
 
 @Injectable()
 export class LoginService {
-  async create(createLoginDto: CreateLoginDto) {
-    return await "done";  
-  }
 
-  findAll() {
-    return `This action returns all login`;
-  }
+    constructor(@InjectModel('Login') private readonly loginobj: Model<loginInter>) { }
 
-  findOne(id: number) {
-    return `This action returns a #${id} login`;
-  }
+    async insertData(appdto: CreateLoginDto) {
+      const data = new this.loginobj(appdto);
+      return await data.save();
+    }
+  
+    async viewdata() {
+      return await this.loginobj.find().exec()
+    }
+  
+    async getSingleUser(id: string) {
+      const user = await this.loginobj.findById(id);
+      return user;
+  
+    }
 
-  update(id: number, updateLoginDto: UpdateLoginDto) {
-    return `This action updates a #${id} login`;
-  }
+    async findByName(name:string){
 
-  remove(id: number) {
-    return `This action removes a #${id} login`;
-  }
+       const user = await this.loginobj.findOne({"username": name});
+       console.log("user: "+ user)
+       return user;
+
+    }
+  
+    async updateData(id: string, CreateLoginDto: CreateLoginDto) {
+      const updated_data = await this.getSingleUser(id);
+      if(CreateLoginDto.id){
+        updated_data.id = CreateLoginDto.id;
+      }
+  
+      if (CreateLoginDto.username) {
+        updated_data.username = CreateLoginDto.username;
+      }
+      
+      if (CreateLoginDto.password) {
+        updated_data.password = CreateLoginDto.password;
+      }
+  
+      return updated_data.save();
+  
+    }
 }

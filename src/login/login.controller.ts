@@ -1,34 +1,53 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { LoginService } from './login.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Injectable } from '@nestjs/common';
+// import { LoginService } from './login.service';
 import { CreateLoginDto } from './dto/create-login.dto';
-import { UpdateLoginDto } from './dto/update-login.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { loginInter } from './login.interface';
+import { Model } from 'mongoose';
 
-@Controller('login')
-export class LoginController {
-  constructor(private readonly loginService: LoginService) {}
+@Injectable()
+export class LoginService {
 
-  @Post()
-  create(@Body() createLoginDto: CreateLoginDto) {
-    return this.loginService.create(createLoginDto);
-  }
+    constructor(@InjectModel('Login') private readonly loginobj: Model<loginInter>) { }
 
-  @Get()
-  findAll() {
-    return this.loginService.findAll();
-  }
+    async insertData(CreateLoginDto: CreateLoginDto) {
+      const data = new this.loginobj(CreateLoginDto);
+      return await data.save();
+    }
+  
+    async viewdata() {
+      return await this.loginobj.find().exec()
+    }
+  
+    async getSingleUser(id: string) {
+      const user = await this.loginobj.findById(id);
+      return user;
+  
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.loginService.findOne(+id);
-  }
+    async findByName(name:string){
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLoginDto: UpdateLoginDto) {
-    return this.loginService.update(+id, updateLoginDto);
-  }
+       const user = await this.loginobj.findOne({"username": name});
+       console.log("user: "+ user)
+       return user;
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.loginService.remove(+id);
-  }
+    }
+  
+    async updateData(id: string, CreateLoginDto: CreateLoginDto) {
+      const updated_data = await this.getSingleUser(id);
+      if(CreateLoginDto.id){
+        updated_data.id = CreateLoginDto.id;
+      }
+  
+      if (CreateLoginDto.username) {
+        updated_data.username = CreateLoginDto.username;
+      }
+      
+      if (CreateLoginDto.password) {
+        updated_data.password = CreateLoginDto.password;
+      }
+  
+      return updated_data.save();
+  
+    }
 }
