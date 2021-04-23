@@ -1,53 +1,56 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Injectable } from '@nestjs/common';
-// import { LoginService } from './login.service';
-import { CreateLoginDto } from './dto/create-login.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { loginInter } from './login.interface';
-import { Model } from 'mongoose';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { RegisterService } from 'src/register/register.service';
+import { loginDTO } from './login.dto';
+import { LoginService } from './login.service';
 
-@Injectable()
-export class LoginService {
+@Controller('login')
+export class LoginController {
 
-    constructor(@InjectModel('Login') private readonly loginobj: Model<loginInter>) { }
+    constructor(private readonly loginService: LoginService,private readonly regservice:RegisterService) {}
 
-    async insertData(CreateLoginDto: CreateLoginDto) {
-      const data = new this.loginobj(CreateLoginDto);
-      return await data.save();
-    }
-  
-    async viewdata() {
-      return await this.loginobj.find().exec()
-    }
-  
-    async getSingleUser(id: string) {
-      const user = await this.loginobj.findById(id);
-      return user;
-  
-    }
+    @Post('insert')
+    async Insert(@Body() appdto : loginDTO){
 
-    async findByName(name:string){
+      const value =await  this.regservice.viewdata();
 
-       const user = await this.loginobj.findOne({"username": name});
-       console.log("user: "+ user)
-       return user;
-
-    }
-  
-    async updateData(id: string, CreateLoginDto: CreateLoginDto) {
-      const updated_data = await this.getSingleUser(id);
-      if(CreateLoginDto.id){
-        updated_data.id = CreateLoginDto.id;
-      }
-  
-      if (CreateLoginDto.username) {
-        updated_data.username = CreateLoginDto.username;
-      }
       
-      if (CreateLoginDto.password) {
-        updated_data.password = CreateLoginDto.password;
-      }
+
+      value.forEach(async (user)=>{
+        var val = JSON.stringify(user);
+        var data = JSON.parse(val);
+     
+        if(data.username===appdto.username){
+          console.log("user in log: "+value)
+          const insertion =await this.loginService.insertData(appdto);
+          return insertion;
+        }
+      })
+      
+    }
   
-      return updated_data.save();
+    @Get('view')
+    async view(){
+      const data = await this.loginService.viewdata();
+      return data;
+    }
   
+    @Get('search')
+    async getLoginUser(@Body() id:string){
+     
+      const data = await this.loginService.getSingleUser(id);
+      return data;
+    }
+  
+    @Patch('update/:id')
+    async updateUser(@Param('id') id : string,@Body() logindto:loginDTO){
+      const update_data = this.loginService.updateData(id,logindto);
+      return await update_data;
+    }
+
+    @Get('find/:name')
+    async findUser(@Param('name') name:string){
+      console.log("name in controller: "+await name);
+      const user = await this.loginService.findByName(name);
+      return user;
     }
 }
